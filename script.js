@@ -123,6 +123,27 @@ function renderQuestion(q) {
   return html;
 }
 
+function arraysEqual(a, b) {
+  return JSON.stringify([...a].sort((x, y) => x - y)) === JSON.stringify([...b].sort((x, y) => x - y));
+}
+
+function markQuestionResult(qNumber, isCorrect, message) {
+  const card = document.querySelector(`.question-card[data-q="${qNumber}"]`);
+  if (!card) return;
+
+  card.classList.remove('correct-question', 'wrong-question');
+  card.classList.add(isCorrect ? 'correct-question' : 'wrong-question');
+
+  let resultBox = card.querySelector('.question-result');
+  if (!resultBox) {
+    resultBox = document.createElement('div');
+    resultBox.className = 'question-result';
+    card.appendChild(resultBox);
+  }
+
+  resultBox.innerHTML = message;
+}
+
 function scoreQuiz(variant) {
   const questions = tests[variant];
   let score = 0;
@@ -131,32 +152,96 @@ function scoreQuiz(variant) {
   questions.forEach(q => {
     if (q.type === 'single') {
       const selected = document.querySelector(`input[name="q${q.number}"]:checked`);
-      if (selected && Number(selected.value) === q.answer) {
+      const selectedValue = selected ? Number(selected.value) : null;
+      const isCorrect = selectedValue === q.answer;
+
+      if (isCorrect) {
         score += 1;
+        markQuestionResult(
+          q.number,
+          true,
+          `<strong>Дұрыс.</strong> Дұрыс жауап: ${String.fromCharCode(65 + q.answer)}. ${q.options[q.answer]}`
+        );
+      } else {
+        const chosenText =
+          selectedValue !== null
+            ? `${String.fromCharCode(65 + selectedValue)}. ${q.options[selectedValue]}`
+            : 'Жауап таңдалмады';
+
+        markQuestionResult(
+          q.number,
+          false,
+          `<strong>Қате.</strong><br>
+           Сіздің жауабыңыз: ${chosenText}<br>
+           Дұрыс жауап: ${String.fromCharCode(65 + q.answer)}. ${q.options[q.answer]}`
+        );
       }
     }
 
     else if (q.type === 'matching') {
-      const correct = q.pairs.every(pair => {
+      const selectedPairs = q.pairs.map(pair => {
         const el = document.querySelector(`select[name="q${q.number}_${pair.label}"]`);
-        return el && Number(el.value) === Number(pair.answer);
+        return {
+          label: pair.label,
+          selected: el ? Number(el.value) : null,
+          correct: Number(pair.answer)
+        };
       });
-      if (correct) {
+
+      const isCorrect = selectedPairs.every(p => p.selected === p.correct);
+
+      if (isCorrect) {
         score += 1;
+        markQuestionResult(
+          q.number,
+          true,
+          `<strong>Дұрыс.</strong> Сәйкестендіру толық дұрыс орындалды.`
+        );
+      } else {
+        const details = selectedPairs.map(p => {
+          const userText = p.selected ? p.selected : 'таңдалмады';
+          return `<div><strong>${p.label.toUpperCase()}</strong>: сіз — ${userText}, дұрыс — ${p.correct}</div>`;
+        }).join('');
+
+        markQuestionResult(
+          q.number,
+          false,
+          `<strong>Қате.</strong><br>${details}`
+        );
       }
     }
 
     else if (q.type === 'multi') {
       const selected = Array.from(
         document.querySelectorAll(`input[name="q${q.number}"]:checked`)
-      )
-        .map(el => Number(el.value))
-        .sort((a, b) => a - b);
+      ).map(el => Number(el.value));
 
-      const correct = [...q.answers].sort((a, b) => a - b);
+      const correct = [...q.answers];
+      const isCorrect = arraysEqual(selected, correct);
 
-      if (JSON.stringify(selected) === JSON.stringify(correct)) {
+      const chosenText = selected.length
+        ? selected.map(i => `${String.fromCharCode(65 + i)}. ${q.options[i]}`).join(', ')
+        : 'Жауап таңдалмады';
+
+      const correctText = correct
+        .map(i => `${String.fromCharCode(65 + i)}. ${q.options[i]}`)
+        .join(', ');
+
+      if (isCorrect) {
         score += 1;
+        markQuestionResult(
+          q.number,
+          true,
+          `<strong>Дұрыс.</strong> Дұрыс жауаптар: ${correctText}`
+        );
+      } else {
+        markQuestionResult(
+          q.number,
+          false,
+          `<strong>Қате.</strong><br>
+           Сіздің жауабыңыз: ${chosenText}<br>
+           Дұрыс жауаптар: ${correctText}`
+        );
       }
     }
   });
