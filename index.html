@@ -22,9 +22,10 @@
         <p><strong>Мүмкіндіктер</strong></p>
         <ul>
           <li>Рандом нұсқа</li>
+          <li>Оқушы атымен кіру</li>
           <li>Суреттері бар сұрақтар</li>
           <li>Автоматты бағалау</li>
-          <li>Сәйкестендіру және бірнеше дұрыс жауап</li>
+          <li>Қате/дұрыс жауаптарды көрсету</li>
           <li>Мұғалім панелі</li>
           <li>AI көмекші</li>
         </ul>
@@ -32,14 +33,25 @@
     </header>
 
     <main class="grid">
-      <a class="card action" href="test.html">
-        <h2>Тестті бастау</h2>
-        <p>Кездейсоқ нұсқа ашылады. Нәтиже соңында бірден көрінеді.</p>
-      </a>
+      <section class="card">
+        <h2>Оқушы туралы</h2>
+        <p class="lead">Тестті бастамас бұрын аты-жөніңді енгіз.</p>
+
+        <input
+          type="text"
+          id="studentName"
+          placeholder="Оқушының аты-жөні"
+          class="text-input"
+        >
+
+        <div class="actions">
+          <button class="btn primary" type="button" onclick="startTestWithName()">Тестті бастау</button>
+        </div>
+      </section>
 
       <a class="card action" href="teacher.html">
         <h2>Мұғалім панелі</h2>
-        <p>Орындалған нұсқалар мен ұпайларды көру.</p>
+        <p>Оқушылардың нәтижелері, орташа ұпай, тест саны көрсетіледі.</p>
       </a>
 
       <a class="card action" href="bot.html">
@@ -48,5 +60,21 @@
       </a>
     </main>
   </div>
+
+  <script>
+    function startTestWithName() {
+      const input = document.getElementById('studentName');
+      const name = (input.value || '').trim();
+
+      if (!name) {
+        alert('Оқушының атын енгізіңіз');
+        input.focus();
+        return;
+      }
+
+      localStorage.setItem('studentName', name);
+      window.location.href = 'test.html';
+    }
+  </script>
 </body>
 </html>
